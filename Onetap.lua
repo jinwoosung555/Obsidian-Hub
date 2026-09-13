@@ -1,4 +1,4 @@
--- ObsidianHub Ultra Premium - [FPS] One Tap (Advanced Tabbed UI & Automation)
+-- ObsidianHub Ultra Premium - [FPS] One Tap (Wallbang Aimbot, Wallhack ESP & Advanced Combat)
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
@@ -50,7 +50,7 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.Position = UDim2.new(0, 15, 0, 0)
 TitleLabel.Size = UDim2.new(0, 300, 1, 0)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "OBSIDIANHUB // [FPS] ONE TAP"
+TitleLabel.Text = "OBSIDIANHUB // [FPS] ONE TAP (PRO)"
 TitleLabel.TextColor3 = Color3.fromRGB(168, 85, 247)
 TitleLabel.TextSize = 13
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -73,7 +73,9 @@ PagesContainer.Position = UDim2.new(0, 12, 0, 85)
 PagesContainer.Size = UDim2.new(1, -24, 1, -95)
 
 local aimbotActive = false
+local wallbangActive = false
 local espActive = false
+local chamsActive = false
 local autoCaseActive = false
 
 local pages = {}
@@ -95,7 +97,7 @@ local function createTab(name, layoutOrder)
     page.Parent = PagesContainer
     page.BackgroundTransparency = 1
     page.Size = UDim2.new(1, 0, 1, 0)
-    page.CanvasSize = UDim2.new(0, 0, 1.3, 0)
+    page.CanvasSize = UDim2.new(0, 0, 1.4, 0)
     page.ScrollBarThickness = 3
     page.Visible = (layoutOrder == 1)
 
@@ -127,7 +129,7 @@ local function createTab(name, layoutOrder)
 end
 
 local combatTab = createTab("Combat", 1)
-local miscTab = createTab("Misc & Cases", 2)
+local visualTab = createTab("Visuals", 2)
 local discordTab = createTab("Community", 3)
 
 local function createToggle(parent, name, callback)
@@ -137,7 +139,6 @@ local function createToggle(parent, name, callback)
     ToggleBtn.Size = UDim2.new(1, 0, 0, 38)
     ToggleBtn.AutoButtonColor = false
     ToggleBtn.Font = Enum.Font.GothamMedium
-    ToggleBtn.Text = "  " + name -- Wait, use string concatenation
     ToggleBtn.Text = "  " .. name
     ToggleBtn.TextColor3 = Color3.fromRGB(210, 210, 220)
     ToggleBtn.TextSize = 12
@@ -170,19 +171,29 @@ local function createToggle(parent, name, callback)
     end)
 end
 
-createToggle(combatTab, "Silent Aimbot (Head Lock)", function(state)
+-- Populate Combat Tab
+createToggle(combatTab, "Wallhack Aimbot (Bypass Walls)", function(state)
     aimbotActive = state
 end)
 
-createToggle(combatTab, "Player ESP Highlights", function(state)
-    espActive = state
+createToggle(combatTab, "Wallbang Bullet Penetration", function(state)
+    wallbangActive = state
 end)
 
-createToggle(miscTab, "Auto Roll Cases / Cosmetics", function(state)
+createToggle(combatTab, "Auto Roll Cases / Crates", function(state)
     autoCaseActive = state
 end)
 
-createToggle(miscTab, "Anti-AFK Bypass (Prevent Kick)", function(state)
+-- Populate Visuals Tab
+createToggle(visualTab, "Player ESP Outlines", function(state)
+    espActive = state
+end)
+
+createToggle(visualTab, "Chams (Full Bright / Through Walls)", function(state)
+    chamsActive = state
+end)
+
+createToggle(visualTab, "Anti-AFK Bypass (Prevent Kick)", function(state)
     if state then
         local vu = game:GetService("VirtualUser")
         LocalPlayer.Idled:Connect(function()
@@ -193,6 +204,7 @@ createToggle(miscTab, "Anti-AFK Bypass (Prevent Kick)", function(state)
     end
 end)
 
+-- Populate Discord Tab
 do
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Parent = discordTab
@@ -228,11 +240,9 @@ do
     end)
 end
 
--- ESP Container Cleanup Handling
-local espHighlights = {}
-
+-- Core Render Loop for Aimbot, Wallbang, and ESP
 RunService.RenderStepped:Connect(function()
-    -- 1. Aimbot Logic (Snaps camera to closest enemy head)
+    -- 1. Wallhack Aimbot (Locks onto targets ignoring physical wall barriers)
     if aimbotActive then
         pcall(function()
             local closestTarget = nil
@@ -257,18 +267,43 @@ RunService.RenderStepped:Connect(function()
         end)
     end
 
-    -- 2. ESP Highlight Logic
-    if espActive then
+    -- 2. Wallbang Support (Modifies gun raycast or fires specialized hit parameters if supported)
+    if wallbangActive then
+        pcall(function()
+            for _, tool in ipairs(LocalPlayer.Character and LocalPlayer.Character:GetChildren() or {}) do
+                if tool:IsA("Tool") then
+                    for _, v in ipairs(tool:GetDescendants()) do
+                        if v:IsA("NumberValue") or v:IsA("IntValue") then
+                            if v.Name:lower():find("penetration") or v.Name:lower():find("range") then
+                                v.Value = 9999
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    -- 3. Advanced ESP / Chams (Allows seeing players through walls clearly)
+    if espActive or chamsActive then
         pcall(function()
             for _, player in ipairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and player.Character then
-                    if not player.Character:FindFirstChild("ObsidianESP") then
+                    local char = player.Character
+                    if not char:FindFirstChild("ObsidianESP") then
                         local highlight = Instance.new("Highlight")
                         highlight.Name = "ObsidianESP"
-                        highlight.Adornee = player.Character
+                        highlight.Adornee = char
                         highlight.FillColor = Color3.fromRGB(168, 85, 247)
                         highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                        highlight.Parent = player.Character
+                        if chamsActive then
+                            highlight.FillTransparency = 0.3
+                            highlight.OutlineTransparency = 0
+                        else
+                            highlight.FillTransparency = 0.7
+                            highlight.OutlineTransparency = 0.5
+                        end
+                        highlight.Parent = char
                     end
                 end
             end
@@ -283,7 +318,7 @@ RunService.RenderStepped:Connect(function()
         end)
     end
 
-    -- 3. Auto Roll Cases Logic
+    -- 4. Auto Case Automation
     if autoCaseActive then
         pcall(function()
             for _, remote in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
@@ -294,3 +329,4 @@ RunService.RenderStepped:Connect(function()
         end)
     end
 end)
+
