@@ -1,26 +1,38 @@
--- ObsidianHub Advanced UI - Blade Ball Auto Parry & Sword Spam (Anti-Cheat Bypass)
+-- ObsidianHub Advanced UI - Blade Ball Auto Parry & Sword Spam (Maximum Anti-Cheat Protection)
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
--- Anti-Cheat Hook/Bypass Wrapper
+-- Comprehensive Anti-Cheat Hook/Bypass Wrapper
 pcall(function()
     local mt = getrawmetatable(game)
     setreadonly(mt, false)
     local oldNamecall = mt.__namecall
+    local oldIndex = mt.__index
+
+    -- Hook Namecall to block detection remotes & kicks
     mt.__namecall = newcclosure(function(self, ...)
         local method = getnamecallmethod()
-        -- Intercept kick attempts or telemetry reports sent to BAC/Anti-cheat
-        if method == "Kick" or method == "FireServer" then
-            local args = {...}
-            if tostring(self):lower():find("bac") or tostring(self):lower():find("anticheat") then
-                return
+        local args = {...}
+        
+        if method == "Kick" or method == "kick" then
+            if self == LocalPlayer then
+                return -- Block local player kicks entirely
             end
         end
+        
+        if method == "FireServer" or method == "InvokeServer" then
+            local name = tostring(self):lower()
+            if name:find("bac") or name:find("anticheat") or name:find("ban") or name:find("report") or name:find("detect") then
+                return -- Drop anti-cheat telemetry packets
+            end
+        end
+        
         return oldNamecall(self, ...)
     end)
+    
     setreadonly(mt, true)
 end)
 
@@ -66,7 +78,7 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
 TitleLabel.Size = UDim2.new(0, 250, 1, 0)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "OBSIDIANHUB // SECURE"
+TitleLabel.Text = "OBSIDIANHUB // SECURE v2"
 TitleLabel.TextColor3 = Color3.fromRGB(168, 85, 247)
 TitleLabel.TextSize = 13
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -171,4 +183,5 @@ end)
 createToggle("Spam Sword Defend (Safe Interval)", function(state)
     spamDefendActive = state
 end)
+
 
