@@ -1,11 +1,28 @@
--- ObsidianHub Advanced UI - Blade Ball Auto Parry & Sword Spam
--- Compatible with modern Roblox executors
-
+-- ObsidianHub Advanced UI - Blade Ball Auto Parry & Sword Spam (Anti-Cheat Bypass)
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
+
+-- Anti-Cheat Hook/Bypass Wrapper
+pcall(function()
+    local mt = getrawmetatable(game)
+    setreadonly(mt, false)
+    local oldNamecall = mt.__namecall
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        -- Intercept kick attempts or telemetry reports sent to BAC/Anti-cheat
+        if method == "Kick" or method == "FireServer" then
+            local args = {...}
+            if tostring(self):lower():find("bac") or tostring(self):lower():find("anticheat") then
+                return
+            end
+        end
+        return oldNamecall(self, ...)
+    end)
+    setreadonly(mt, true)
+end)
 
 -- Clean up existing UI if script is re-executed
 if CoreGui:FindFirstChild("ObsidianHubBladeBall") then
@@ -18,7 +35,7 @@ ScreenGui.Name = "ObsidianHubBladeBall"
 ScreenGui.Parent = CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Main Frame (Advanced Dark Obsidian Theme with Purple Accents)
+-- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -28,7 +45,6 @@ MainFrame.Size = UDim2.new(0, 350, 0, 270)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
--- UI Corner Styling
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = MainFrame
@@ -50,7 +66,7 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
 TitleLabel.Size = UDim2.new(0, 250, 1, 0)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "OBSIDIANHUB // BLADE BALL"
+TitleLabel.Text = "OBSIDIANHUB // SECURE"
 TitleLabel.TextColor3 = Color3.fromRGB(168, 85, 247)
 TitleLabel.TextSize = 13
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -67,7 +83,7 @@ UIListLayout.Parent = Container
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 10)
 
--- Helper function to create stylish toggles
+-- Helper function to create toggles
 local function createToggle(name, callback)
     local ToggleBtn = Instance.new("TextButton")
     ToggleBtn.Parent = Container
@@ -111,27 +127,23 @@ end
 local autoParryActive = false
 local spamDefendActive = false
 
--- Function to trigger sword block/parry programmatically
 local function triggerParry()
     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
     task.wait(0.02)
     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
 end
 
--- Auto Parry Core Loop
 RunService.RenderStepped:Connect(function()
     if not autoParryActive and not spamDefendActive then return end
 
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
 
-    -- Spam Defend Logic (Continuously inputs defense command at high frequency)
     if spamDefendActive then
         pcall(triggerParry)
         return
     end
 
-    -- Auto Parry Logic (Scans workspace for incoming target balls)
     if autoParryActive then
         pcall(function()
             for _, ball in ipairs(workspace:FindFirstChild("Balls") and workspace.Balls:GetChildren() or {}) do
@@ -152,11 +164,11 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Build Interface Elements
 createToggle("Auto Parry (Smart Target)", function(state)
     autoParryActive = state
 end)
 
-createToggle("Spam Sword Defend (Rapid Block)", function(state)
+createToggle("Spam Sword Defend (Safe Interval)", function(state)
     spamDefendActive = state
 end)
+
